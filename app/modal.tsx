@@ -1,29 +1,34 @@
-import { Link } from 'expo-router';
-import { StyleSheet } from 'react-native';
+import { router } from 'expo-router';
+import { StyleSheet, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
+import { EmptyState } from '@/src/components/feedback';
+import { Screen } from '@/src/components/layout';
+import { Button, Card } from '@/src/components/ui';
 
 export default function ModalScreen() {
+  const { t } = useTranslation();
+
   return (
-    <ThemedView style={styles.container}>
-      <ThemedText type="title">This is a modal</ThemedText>
-      <Link href="/" dismissTo style={styles.link}>
-        <ThemedText type="link">Go to home screen</ThemedText>
-      </Link>
-    </ThemedView>
+    <Screen scroll={false}>
+      <View style={styles.container}>
+        <Card variant="elevated">
+          <EmptyState
+            icon="information-circle-outline"
+            title={t('app.modal.title')}
+            description={t('app.modal.description')}
+          />
+          <Button title={t('common.actions.close')} variant="primary" onPress={() => router.dismiss()} />
+        </Card>
+      </View>
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
+    alignItems: 'stretch',
     flex: 1,
-    alignItems: 'center',
     justifyContent: 'center',
-    padding: 20,
-  },
-  link: {
-    marginTop: 15,
-    paddingVertical: 15,
   },
 });

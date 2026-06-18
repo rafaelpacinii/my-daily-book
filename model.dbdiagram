@@ -1,0 +1,443 @@
+Enum library_book_status {
+  to_read
+  reading
+  read
+  dropped
+}
+
+Enum reading_cycle_status {
+  reading
+  completed
+  dropped
+}
+
+Enum book_copy_format {
+  physical
+  digital
+}
+
+Enum book_list_type {
+  custom
+  wishlist
+}
+
+Enum wishlist_priority {
+  low
+  medium
+  high
+}
+
+Enum desired_book_format {
+  physical
+  digital
+  any
+}
+
+Table authors {
+  id text [pk]
+  name text [not null]
+
+  created_at integer [not null]
+  updated_at integer [not null]
+
+  Indexes {
+    name [name: "authors_name_idx"]
+  }
+}
+
+Table works {
+  id text [pk]
+
+  title text [not null]
+  original_title text
+  description text
+  original_language text
+  first_published_date text
+
+  created_at integer [not null]
+  updated_at integer [not null]
+
+  Indexes {
+    title [name: "works_title_idx"]
+  }
+}
+
+Table work_authors {
+  work_id text [not null]
+  author_id text [not null]
+  position integer [not null, default: 0]
+
+  Indexes {
+    (work_id, author_id) [pk]
+    work_id [name: "work_authors_work_id_idx"]
+    author_id [name: "work_authors_author_id_idx"]
+  }
+}
+
+Table editions {
+  id text [pk]
+  work_id text [not null]
+
+  metadata_source text [not null, default: 'google_books']
+  external_metadata_id text
+  google_books_id text [unique]
+  google_books_etag text
+
+  title text [not null]
+  subtitle text
+  description text
+
+  publisher text
+  published_date text
+  page_count integer
+  language text
+  print_type text
+
+  isbn_10 text
+  isbn_13 text
+
+  thumbnail_url text
+  small_thumbnail_url text
+  cover_source text [not null, default: 'remote']
+  cover_mime_type text
+  cover_file_name text
+  cover_url text
+
+  preview_link text
+  info_link text
+  canonical_volume_link text
+
+  metadata_fetched_at integer [not null]
+  created_at integer [not null]
+  updated_at integer [not null]
+
+  Indexes {
+    work_id [name: "editions_work_id_idx"]
+    (metadata_source, external_metadata_id) [unique, name: "editions_metadata_source_external_id_unique"]
+    title [name: "editions_title_idx"]
+    isbn_10 [name: "editions_isbn_10_idx"]
+    isbn_13 [name: "editions_isbn_13_idx"]
+  }
+}
+
+Table library_books {
+  id text [pk]
+  work_id text [not null, unique]
+
+  status library_book_status [not null, default: 'to_read']
+
+  rating integer
+  notes text
+
+  added_at integer [not null]
+  created_at integer [not null]
+  updated_at integer [not null]
+
+  Indexes {
+    status [name: "library_books_status_idx"]
+  }
+}
+
+Table book_copies {
+  id text [pk]
+
+  library_book_id text [not null]
+  edition_id text [not null]
+
+  format book_copy_format [not null]
+
+  label text
+  notes text
+  acquired_at text
+
+  created_at integer [not null]
+  updated_at integer [not null]
+
+  Indexes {
+    library_book_id [name: "book_copies_library_book_id_idx"]
+    edition_id [name: "book_copies_edition_id_idx"]
+    format [name: "book_copies_format_idx"]
+
+    (library_book_id, edition_id, format) [
+      unique,
+      name: "book_copies_library_edition_format_unique"
+    ]
+  }
+}
+
+Table reading_cycles {
+  id text [pk]
+
+  library_book_id text [not null]
+  edition_id text [not null]
+  book_copy_id text
+
+  cycle_number integer [not null]
+  status reading_cycle_status [not null, default: 'reading']
+
+  started_at text [not null]
+  finished_at text
+  dropped_at text
+  last_read_at text
+
+  rating integer
+  notes text
+
+  created_at integer [not null]
+  updated_at integer [not null]
+
+  Indexes {
+    (library_book_id, cycle_number) [
+      unique,
+      name: "reading_cycles_library_book_number_unique"
+    ]
+
+    library_book_id [name: "reading_cycles_library_book_id_idx"]
+    edition_id [name: "reading_cycles_edition_id_idx"]
+    book_copy_id [name: "reading_cycles_book_copy_id_idx"]
+    status [name: "reading_cycles_status_idx"]
+    started_at [name: "reading_cycles_started_at_idx"]
+  }
+}
+
+Table reading_logs {
+  id text [pk]
+  reading_cycle_id text [not null]
+
+  reading_date text [not null]
+
+  start_page integer [not null]
+  end_page integer [not null]
+
+  duration_seconds integer
+  notes text
+
+  created_at integer [not null]
+  updated_at integer [not null]
+
+  Indexes {
+    reading_cycle_id [name: "reading_logs_reading_cycle_id_idx"]
+    reading_date [name: "reading_logs_reading_date_idx"]
+
+    (reading_cycle_id, reading_date) [
+      name: "reading_logs_cycle_date_idx"
+    ]
+  }
+}
+
+Table book_lists {
+  id text [pk]
+
+  name text [not null]
+  description text
+
+  type book_list_type [not null, default: 'custom']
+
+  created_at integer [not null]
+  updated_at integer [not null]
+
+  Indexes {
+    name [name: "book_lists_name_idx"]
+    type [name: "book_lists_type_idx"]
+  }
+}
+
+Table book_list_items {
+  id text [pk]
+
+  book_list_id text [not null]
+  work_id text [not null]
+  edition_id text
+
+  position integer
+  notes text
+
+  wishlist_priority wishlist_priority
+  desired_format desired_book_format
+  target_price real
+  target_currency text
+
+  added_at integer [not null]
+  created_at integer [not null]
+  updated_at integer [not null]
+
+  Indexes {
+    book_list_id [name: "book_list_items_list_id_idx"]
+    work_id [name: "book_list_items_work_id_idx"]
+    edition_id [name: "book_list_items_edition_id_idx"]
+
+    (book_list_id, work_id, edition_id) [
+      unique,
+      name: "book_list_items_list_work_edition_unique"
+    ]
+
+    (book_list_id, position) [
+      name: "book_list_items_list_position_idx"
+    ]
+  }
+}
+
+Table purchase_links {
+  id text [pk]
+
+  book_list_item_id text [not null]
+
+  store_name text
+  url text [not null]
+
+  price real
+  currency text
+
+  notes text
+  last_checked_at integer
+
+  created_at integer [not null]
+  updated_at integer [not null]
+
+  Indexes {
+    book_list_item_id [name: "purchase_links_book_list_item_id_idx"]
+    store_name [name: "purchase_links_store_name_idx"]
+
+    (book_list_item_id, url) [
+      unique,
+      name: "purchase_links_item_url_unique"
+    ]
+  }
+}
+
+Enum reading_goal_status {
+  active
+  completed
+  cancelled
+}
+
+Table reading_goals {
+  id text [pk]
+
+  name text [not null]
+  description text
+
+  start_date text [not null]
+  target_date text [not null]
+
+  status reading_goal_status [not null, default: 'active']
+
+  completed_at text
+
+  created_at integer [not null]
+  updated_at integer [not null]
+
+  Indexes {
+    status [name: "reading_goals_status_idx"]
+    target_date [name: "reading_goals_target_date_idx"]
+    (status, target_date) [name: "reading_goals_status_target_date_idx"]
+  }
+}
+
+Table reading_goal_items {
+  id text [pk]
+
+  reading_goal_id text [not null]
+  library_book_id text [not null]
+
+  position integer
+  completed_at text
+
+  added_at integer [not null]
+  created_at integer [not null]
+  updated_at integer [not null]
+
+  Indexes {
+    (reading_goal_id, library_book_id) [
+      unique,
+      name: "reading_goal_items_goal_book_unique"
+    ]
+
+    reading_goal_id [name: "reading_goal_items_goal_id_idx"]
+    library_book_id [name: "reading_goal_items_library_book_id_idx"]
+
+    (reading_goal_id, position) [
+      name: "reading_goal_items_goal_position_idx"
+    ]
+  }
+}
+
+Ref: reading_goal_items.reading_goal_id > reading_goals.id [
+  delete: cascade,
+  update: cascade
+]
+
+Ref: reading_goal_items.library_book_id > library_books.id [
+  delete: cascade,
+  update: cascade
+]
+
+Ref: work_authors.work_id > works.id [
+  delete: cascade,
+  update: cascade
+]
+
+Ref: work_authors.author_id > authors.id [
+  delete: cascade,
+  update: cascade
+]
+
+Ref: editions.work_id > works.id [
+  delete: cascade,
+  update: cascade
+]
+
+Ref: library_books.work_id > works.id [
+  delete: cascade,
+  update: cascade
+]
+
+Ref: book_copies.library_book_id > library_books.id [
+  delete: cascade,
+  update: cascade
+]
+
+Ref: book_copies.edition_id > editions.id [
+  delete: restrict,
+  update: cascade
+]
+
+Ref: reading_cycles.library_book_id > library_books.id [
+  delete: cascade,
+  update: cascade
+]
+
+Ref: reading_cycles.edition_id > editions.id [
+  delete: restrict,
+  update: cascade
+]
+
+Ref: reading_cycles.book_copy_id > book_copies.id [
+  delete: set null,
+  update: cascade
+]
+
+Ref: reading_logs.reading_cycle_id > reading_cycles.id [
+  delete: cascade,
+  update: cascade
+]
+
+Ref: book_list_items.book_list_id > book_lists.id [
+  delete: cascade,
+  update: cascade
+]
+
+Ref: book_list_items.work_id > works.id [
+  delete: cascade,
+  update: cascade
+]
+
+Ref: book_list_items.edition_id > editions.id [
+  delete: set null,
+  update: cascade
+]
+
+Ref: purchase_links.book_list_item_id > book_list_items.id [
+  delete: cascade,
+  update: cascade
+]
