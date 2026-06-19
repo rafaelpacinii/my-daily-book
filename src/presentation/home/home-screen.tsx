@@ -1,5 +1,6 @@
 import { RefreshControl, View } from 'react-native';
 import { router } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 
 import { ErrorState } from '@/src/components/feedback';
 import { Screen } from '@/src/components/layout';
@@ -38,6 +39,8 @@ export function HomeScreen() {
 
 function HomeScreenContent({ api }: { api: NonNullable<ReturnType<typeof useApplication>['api']> }) {
   const { theme } = useAppTheme();
+  const { t, i18n } = useTranslation();
+  const locale = i18n.language === 'pt-BR' ? 'pt-BR' : 'en';
   const { status, viewModel, error, retry, refresh } = useHomeScreen({ api });
   const isInitialLoading = status === 'idle' || (status === 'loading' && !viewModel);
   const isRefreshing = status === 'refreshing';
@@ -54,9 +57,9 @@ function HomeScreenContent({ api }: { api: NonNullable<ReturnType<typeof useAppl
     return (
       <Screen>
         <ErrorState
-          title="Unable to load your reading overview."
-          description="Please try again."
-          actionLabel="Try again"
+          title={t('home.loadErrorTitle')}
+          description={t('home.loadErrorDescription')}
+          actionLabel={t('common.actions.retry')}
           onAction={retry}
         />
       </Screen>
@@ -82,15 +85,15 @@ function HomeScreenContent({ api }: { api: NonNullable<ReturnType<typeof useAppl
         />
       }>
       <HomeHeader
-        greeting={getLocalGreeting()}
-        dateLabel={formatHomeDate()}
+        greeting={getLocalGreeting(new Date(), locale)}
+        dateLabel={formatHomeDate(new Date(), locale)}
         onOpenSettings={() => router.push(appRoutes.settings)}
       />
       {error ? (
         <ErrorState
-          title="Unable to refresh your reading overview."
-          description="Your previous overview is still visible."
-          actionLabel="Try again"
+          title={t('home.refreshErrorTitle')}
+          description={t('home.refreshErrorDescription')}
+          actionLabel={t('common.actions.retry')}
           onAction={refresh}
         />
       ) : null}

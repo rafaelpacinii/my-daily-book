@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Alert, Linking, Platform, View } from 'react-native';
 import { router } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 
 import type { ApplicationApi } from '@/src/application';
 import { ErrorState } from '@/src/components/feedback';
@@ -25,12 +26,14 @@ import {
 
 export function WishlistItemScreen({ bookListItemId }: { bookListItemId: string }) {
   const { api } = useApplication();
-  if (!api) return <Screen loading loadingMessage="Loading wishlist item" />;
+  const { t } = useTranslation();
+  if (!api) return <Screen loading loadingMessage={t('lists.wishlistItem.loading')} />;
   return <WishlistItemContent api={api} bookListItemId={bookListItemId} />;
 }
 
 function WishlistItemContent({ api, bookListItemId }: { api: ApplicationApi; bookListItemId: string }) {
   const { theme } = useAppTheme();
+  const { t } = useTranslation();
   const [item, setItem] = useState<BookListItemViewModel | null>(null);
   const [editions, setEditions] = useState<{ id: string; title: string }[]>([]);
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
@@ -91,10 +94,10 @@ function WishlistItemContent({ api, bookListItemId }: { api: ApplicationApi; boo
         setStatus('success');
       })
       .catch((nextError: unknown) => {
-        setError(nextError instanceof Error ? nextError.message : 'Unable to load wishlist item.');
+        setError(nextError instanceof Error ? nextError.message : t('lists.wishlistItem.loadErrorTitle'));
         setStatus('error');
       });
-  }, [api, bookListItemId]);
+  }, [api, bookListItemId, t]);
 
   useEffect(() => load(), [load]);
 
@@ -118,12 +121,12 @@ function WishlistItemContent({ api, bookListItemId }: { api: ApplicationApi; boo
       targetCurrency: validation.input.targetCurrency,
     }))
       .then(() => load())
-      .catch((nextError: unknown) => setError(nextError instanceof Error ? nextError.message : 'Unable to update wishlist item.'))
+      .catch(() => setError(t('lists.wishlistItem.updateError')))
       .finally(() => {
         submittingRef.current = false;
         setSubmitting(false);
       });
-  }, [api, item, load, wishlistForm]);
+  }, [api, item, load, t, wishlistForm]);
 
   const submitPurchaseLink = useCallback(() => {
     if (!item || submittingRef.current) return;
@@ -147,12 +150,12 @@ function WishlistItemContent({ api, bookListItemId }: { api: ApplicationApi; boo
         setPurchaseFormVisible(false);
         load();
       })
-      .catch((nextError: unknown) => setError(nextError instanceof Error ? nextError.message : 'Unable to save purchase link.'))
+      .catch(() => setError(t('lists.wishlistItem.saveLinkError')))
       .finally(() => {
         submittingRef.current = false;
         setSubmitting(false);
       });
-  }, [api, item, load, purchaseForm, purchaseLinkId]);
+  }, [api, item, load, purchaseForm, purchaseLinkId, t]);
 
   const markPurchased = useCallback(() => {
     if (!item || submittingRef.current) return;
@@ -168,7 +171,7 @@ function WishlistItemContent({ api, bookListItemId }: { api: ApplicationApi; boo
       setError(null);
       Promise.resolve(api.lists.markWishlistItemAsPurchased({ id: item.id, ...validation.input }))
         .then((result) => router.replace(libraryBookRoute(result.libraryBook.id)))
-        .catch((nextError: unknown) => setError(nextError instanceof Error ? nextError.message : 'Unable to mark as purchased.'))
+        .catch(() => setError(t('lists.wishlistItem.markPurchasedError')))
         .finally(() => {
           submittingRef.current = false;
           setSubmitting(false);
@@ -176,11 +179,11 @@ function WishlistItemContent({ api, bookListItemId }: { api: ApplicationApi; boo
     };
 
     if (Platform.OS === 'web') run();
-    else Alert.alert('Mark as purchased?', 'This creates a library copy and removes the wishlist item.', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Confirm', onPress: run },
+    else Alert.alert(t('lists.wishlistItem.markPurchasedTitle'), t('lists.wishlistItem.markPurchasedDescription'), [
+      { text: t('common.actions.cancel'), style: 'cancel' },
+      { text: t('lists.wishlistItem.confirm'), onPress: run },
     ]);
-  }, [api, item, markForm]);
+  }, [api, item, markForm, t]);
 
   const removeFromWishlist = useCallback(() => {
     if (!item || submittingRef.current) return;
@@ -189,24 +192,24 @@ function WishlistItemContent({ api, bookListItemId }: { api: ApplicationApi; boo
       setSubmitting(true);
       Promise.resolve(api.lists.removeItem(item.id))
         .then(() => router.replace('/wishlist'))
-        .catch((nextError: unknown) => setError(nextError instanceof Error ? nextError.message : 'Unable to remove wishlist item.'))
+        .catch(() => setError(t('lists.wishlistItem.removeError')))
         .finally(() => {
           submittingRef.current = false;
           setSubmitting(false);
         });
     };
     if (Platform.OS === 'web') run();
-    else Alert.alert('Remove from wishlist?', 'This removes only the wishlist item.', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Remove', style: 'destructive', onPress: run },
+    else Alert.alert(t('lists.wishlistItem.removeTitle'), t('lists.wishlistItem.removeDescription'), [
+      { text: t('common.actions.cancel'), style: 'cancel' },
+      { text: t('common.actions.remove'), style: 'destructive', onPress: run },
     ]);
-  }, [api, item]);
+  }, [api, item, t]);
 
-  if (status === 'loading') return <Screen loading loadingMessage="Loading wishlist item" />;
+  if (status === 'loading') return <Screen loading loadingMessage={t('lists.wishlistItem.loading')} />;
   if (status === 'error' || !item) {
     return (
-      <Screen header={<AppHeader title="Wishlist item" leftAction={<Button title="Back" variant="ghost" onPress={() => router.back()} />} />}>
-        <ErrorState title="Unable to load wishlist item." description={error ?? 'Please try again.'} actionLabel="Try again" onAction={load} />
+      <Screen header={<AppHeader title={t('lists.wishlistItem.title')} leftAction={<Button title={t('common.actions.back')} variant="ghost" onPress={() => router.back()} />} />}>
+        <ErrorState title={t('lists.wishlistItem.loadErrorTitle')} description={error ?? t('lists.wishlistItem.loadErrorDescription')} actionLabel={t('common.actions.retry')} onAction={load} />
       </Screen>
     );
   }
@@ -214,7 +217,7 @@ function WishlistItemContent({ api, bookListItemId }: { api: ApplicationApi; boo
   return (
     <Screen
       keyboardAvoiding
-      header={<AppHeader title={item.title} subtitle="Wishlist item" leftAction={<Button title="Back" variant="ghost" onPress={() => router.back()} />} />}>
+      header={<AppHeader title={item.title} subtitle={t('lists.wishlistItem.title')} leftAction={<Button title={t('common.actions.back')} variant="ghost" onPress={() => router.back()} />} />}>
       <Card variant="elevated">
         <View style={{ flexDirection: 'row', gap: theme.spacing.md }}>
           <BookCover url={item.coverUrl} title={item.title} />
@@ -232,20 +235,20 @@ function WishlistItemContent({ api, bookListItemId }: { api: ApplicationApi; boo
         </View>
       </Card>
 
-      <SectionHeader title="Edit" />
+      <SectionHeader title={t('lists.wishlistItem.edit')} />
       <WishlistEditFields form={wishlistForm} setForm={setWishlistForm} />
-      <ReadingFormField label="Notes" value={wishlistForm.notes} onChangeText={(notes) => setWishlistForm((current) => ({ ...current, notes }))} multiline />
-      <Button title="Save wishlist item" loading={submitting} onPress={submitWishlist} fullWidth />
+      <ReadingFormField label={t('lists.wishlistItem.notes')} value={wishlistForm.notes} onChangeText={(notes) => setWishlistForm((current) => ({ ...current, notes }))} multiline />
+      <Button title={t('lists.wishlistItem.saveItem')} loading={submitting} onPress={submitWishlist} fullWidth />
 
-      <SectionHeader title="Purchase links" />
+      <SectionHeader title={t('lists.wishlistItem.purchaseLinks')} />
       {item.purchaseLinks.map((link) => (
         <PurchaseLinkCard
           key={link.id}
           link={link}
-          onOpen={() => openPurchaseLink(link.url, setError)}
+          onOpen={() => openPurchaseLink(link.url, setError, t)}
           onEdit={() => {
             setPurchaseForm({
-              storeName: link.storeName === 'Purchase link' ? '' : link.storeName,
+              storeName: link.storeName === t('lists.wishlistItem.purchaseLinkFallback') ? '' : link.storeName,
               url: link.url,
               price: link.price == null ? '' : `${link.price}`,
               currency: link.currency ?? '',
@@ -258,31 +261,31 @@ function WishlistItemContent({ api, bookListItemId }: { api: ApplicationApi; boo
             setSubmitting(true);
             Promise.resolve(api.lists.removePurchaseLink(link.id))
               .then(() => load())
-              .catch((nextError: unknown) => setError(nextError instanceof Error ? nextError.message : 'Unable to delete purchase link.'))
+              .catch(() => setError(t('lists.wishlistItem.deleteLinkError')))
               .finally(() => setSubmitting(false));
           }}
         />
       ))}
       {purchaseFormVisible ? (
         <Card variant="outlined">
-          <ReadingFormField label="Store name" value={purchaseForm.storeName} onChangeText={(storeName) => setPurchaseForm((current) => ({ ...current, storeName }))} />
-          <ReadingFormField label="URL" value={purchaseForm.url} onChangeText={(url) => setPurchaseForm((current) => ({ ...current, url }))} />
+          <ReadingFormField label={t('lists.wishlistItem.storeName')} value={purchaseForm.storeName} onChangeText={(storeName) => setPurchaseForm((current) => ({ ...current, storeName }))} />
+          <ReadingFormField label={t('lists.wishlistItem.url')} value={purchaseForm.url} onChangeText={(url) => setPurchaseForm((current) => ({ ...current, url }))} />
           <View style={{ flexDirection: 'row', gap: theme.spacing.md }}>
             <View style={{ flex: 1 }}>
-              <ReadingFormField label="Price" value={purchaseForm.price} onChangeText={(price) => setPurchaseForm((current) => ({ ...current, price }))} keyboardType="decimal-pad" />
+              <ReadingFormField label={t('lists.wishlistItem.price')} value={purchaseForm.price} onChangeText={(price) => setPurchaseForm((current) => ({ ...current, price }))} keyboardType="decimal-pad" />
             </View>
             <View style={{ flex: 1 }}>
-              <ReadingFormField label="Currency" value={purchaseForm.currency} onChangeText={(currency) => setPurchaseForm((current) => ({ ...current, currency: currency.toUpperCase() }))} placeholder="USD" />
+              <ReadingFormField label={t('lists.wishlistItem.currency')} value={purchaseForm.currency} onChangeText={(currency) => setPurchaseForm((current) => ({ ...current, currency: currency.toUpperCase() }))} placeholder="USD" />
             </View>
           </View>
-          <ReadingFormField label="Notes" value={purchaseForm.notes} onChangeText={(notes) => setPurchaseForm((current) => ({ ...current, notes }))} multiline />
-          <Button title={purchaseLinkId ? 'Save link' : 'Add link'} loading={submitting} onPress={submitPurchaseLink} />
+          <ReadingFormField label={t('lists.wishlistItem.notes')} value={purchaseForm.notes} onChangeText={(notes) => setPurchaseForm((current) => ({ ...current, notes }))} multiline />
+          <Button title={purchaseLinkId ? t('lists.wishlistItem.saveLink') : t('lists.wishlistItem.addLink')} loading={submitting} onPress={submitPurchaseLink} />
         </Card>
       ) : (
-        <Button title="Add purchase link" variant="secondary" onPress={() => setPurchaseFormVisible(true)} />
+        <Button title={t('lists.wishlistItem.addPurchaseLink')} variant="secondary" onPress={() => setPurchaseFormVisible(true)} />
       )}
 
-      <SectionHeader title="Mark as purchased" />
+      <SectionHeader title={t('lists.wishlistItem.markPurchased')} />
       <Card variant="outlined">
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: theme.spacing.sm }}>
           {editions.map((edition) => (
@@ -291,16 +294,16 @@ function WishlistItemContent({ api, bookListItemId }: { api: ApplicationApi; boo
         </View>
         <View style={{ flexDirection: 'row', gap: theme.spacing.sm }}>
           {(['physical', 'digital'] as const).map((format) => (
-            <Button key={format} title={format} variant={markForm.format === format ? 'secondary' : 'outline'} onPress={() => setMarkForm((current) => ({ ...current, format }))} />
+            <Button key={format} title={format === 'physical' ? t('lists.formatters.physical') : t('lists.formatters.digital')} variant={markForm.format === format ? 'secondary' : 'outline'} onPress={() => setMarkForm((current) => ({ ...current, format }))} />
           ))}
         </View>
-        <ReadingFormField label="Copy label" value={markForm.label} onChangeText={(label) => setMarkForm((current) => ({ ...current, label }))} />
-        <ReadingFormField label="Acquired at" value={markForm.acquiredAt} onChangeText={(acquiredAt) => setMarkForm((current) => ({ ...current, acquiredAt }))} placeholder="YYYY-MM-DD" />
-        <ReadingFormField label="Copy notes" value={markForm.notes} onChangeText={(notes) => setMarkForm((current) => ({ ...current, notes }))} multiline />
-        <Button title="Mark as purchased" loading={submitting} onPress={markPurchased} />
+        <ReadingFormField label={t('lists.wishlistItem.copyLabel')} value={markForm.label} onChangeText={(label) => setMarkForm((current) => ({ ...current, label }))} />
+        <ReadingFormField label={t('lists.wishlistItem.acquiredAt')} value={markForm.acquiredAt} onChangeText={(acquiredAt) => setMarkForm((current) => ({ ...current, acquiredAt }))} placeholder="YYYY-MM-DD" />
+        <ReadingFormField label={t('lists.wishlistItem.copyNotes')} value={markForm.notes} onChangeText={(notes) => setMarkForm((current) => ({ ...current, notes }))} multiline />
+        <Button title={t('lists.wishlistItem.markPurchased')} loading={submitting} onPress={markPurchased} />
       </Card>
       {error ? <AppText color="error">{error}</AppText> : null}
-      <Button title="Remove from wishlist" variant="danger" loading={submitting} onPress={removeFromWishlist} fullWidth />
+      <Button title={t('lists.wishlistItem.removeFromWishlist')} variant="danger" loading={submitting} onPress={removeFromWishlist} fullWidth />
     </Screen>
   );
 }
@@ -313,24 +316,25 @@ function WishlistEditFields({
   setForm: React.Dispatch<React.SetStateAction<WishlistItemFormState>>;
 }) {
   const { theme } = useAppTheme();
+  const { t } = useTranslation();
   return (
     <View style={{ gap: theme.spacing.md }}>
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: theme.spacing.sm }}>
         {(['low', 'medium', 'high'] as const).map((wishlistPriority) => (
-          <Button key={wishlistPriority} title={wishlistPriority} variant={form.wishlistPriority === wishlistPriority ? 'secondary' : 'outline'} onPress={() => setForm((current) => ({ ...current, wishlistPriority }))} />
+          <Button key={wishlistPriority} title={formatPriority(wishlistPriority, t)} variant={form.wishlistPriority === wishlistPriority ? 'secondary' : 'outline'} onPress={() => setForm((current) => ({ ...current, wishlistPriority }))} />
         ))}
       </View>
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: theme.spacing.sm }}>
         {(['any', 'physical', 'digital'] as const).map((desiredFormat) => (
-          <Button key={desiredFormat} title={desiredFormat} variant={form.desiredFormat === desiredFormat ? 'secondary' : 'outline'} onPress={() => setForm((current) => ({ ...current, desiredFormat }))} />
+          <Button key={desiredFormat} title={formatDesiredFormat(desiredFormat, t)} variant={form.desiredFormat === desiredFormat ? 'secondary' : 'outline'} onPress={() => setForm((current) => ({ ...current, desiredFormat }))} />
         ))}
       </View>
       <View style={{ flexDirection: 'row', gap: theme.spacing.md }}>
         <View style={{ flex: 1 }}>
-          <ReadingFormField label="Target price" value={form.targetPrice} onChangeText={(targetPrice) => setForm((current) => ({ ...current, targetPrice }))} keyboardType="decimal-pad" />
+          <ReadingFormField label={t('lists.addItem.targetPrice')} value={form.targetPrice} onChangeText={(targetPrice) => setForm((current) => ({ ...current, targetPrice }))} keyboardType="decimal-pad" />
         </View>
         <View style={{ flex: 1 }}>
-          <ReadingFormField label="Currency" value={form.targetCurrency} onChangeText={(targetCurrency) => setForm((current) => ({ ...current, targetCurrency: targetCurrency.toUpperCase() }))} placeholder="USD" />
+          <ReadingFormField label={t('lists.addItem.currency')} value={form.targetCurrency} onChangeText={(targetCurrency) => setForm((current) => ({ ...current, targetCurrency: targetCurrency.toUpperCase() }))} placeholder="USD" />
         </View>
       </View>
     </View>
@@ -348,6 +352,8 @@ function PurchaseLinkCard({
   onEdit: () => void;
   onDelete: () => void;
 }) {
+  const { t } = useTranslation();
+
   return (
     <Card variant="outlined">
       <AppText variant="heading3">{link.storeName}</AppText>
@@ -355,23 +361,35 @@ function PurchaseLinkCard({
       <AppText color="textSecondary">{link.priceLabel}</AppText>
       {link.notes ? <AppText color="textSecondary">{link.notes}</AppText> : null}
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-        <Button title="Open link" variant="secondary" accessibilityLabel={`Open external link ${link.storeName}`} onPress={onOpen} />
-        <Button title="Edit" variant="outline" onPress={onEdit} />
-        <Button title="Delete" variant="danger" onPress={onDelete} />
+        <Button title={t('lists.wishlistItem.openLink')} variant="secondary" accessibilityLabel={t('lists.wishlistItem.openExternalLink', { storeName: link.storeName })} onPress={onOpen} />
+        <Button title={t('common.actions.edit')} variant="outline" onPress={onEdit} />
+        <Button title={t('common.actions.delete')} variant="danger" onPress={onDelete} />
       </View>
     </Card>
   );
 }
 
-function openPurchaseLink(url: string, setError: (message: string | null) => void) {
+function openPurchaseLink(url: string, setError: (message: string | null) => void, t: (key: string) => string) {
   try {
     const parsed = new URL(url);
     if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
-      setError('Only http and https links can be opened.');
+      setError(t('lists.wishlistItem.onlyHttpLinks'));
       return;
     }
-    Linking.openURL(url).catch(() => setError('Unable to open link.'));
+    Linking.openURL(url).catch(() => setError(t('lists.wishlistItem.openLinkError')));
   } catch {
-    setError('Unable to open invalid link.');
+    setError(t('lists.wishlistItem.invalidLinkError'));
   }
+}
+
+function formatPriority(priority: WishlistItemFormState['wishlistPriority'], t: (key: string) => string) {
+  if (priority === 'high') return t('lists.formatters.highPriority');
+  if (priority === 'low') return t('lists.formatters.lowPriority');
+  return t('lists.formatters.mediumPriority');
+}
+
+function formatDesiredFormat(format: WishlistItemFormState['desiredFormat'], t: (key: string) => string) {
+  if (format === 'physical') return t('lists.formatters.physical');
+  if (format === 'digital') return t('lists.formatters.digital');
+  return t('lists.formatters.anyFormat');
 }

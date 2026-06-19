@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { View } from 'react-native';
 import { router } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 
 import type { ApplicationApi } from '@/src/application';
 import { EmptyState, ErrorState } from '@/src/components/feedback';
@@ -17,7 +18,8 @@ import { validateReadingGoalBooksForm } from './goals-validation';
 
 export function AddReadingGoalBooksScreen({ readingGoalId }: { readingGoalId: string }) {
   const { api } = useApplication();
-  if (!api) return <Screen loading loadingMessage="Loading books" />;
+  const { t } = useTranslation();
+  if (!api) return <Screen loading loadingMessage={t('goals.addBooks.loading')} />;
   return <AddReadingGoalBooksContent api={api} readingGoalId={readingGoalId} />;
 }
 
@@ -29,6 +31,7 @@ function AddReadingGoalBooksContent({
   readingGoalId: string;
 }) {
   const { theme } = useAppTheme();
+  const { t } = useTranslation();
   const [viewModel, setViewModel] = useState<ReadingGoalBooksViewModel>({
     books: [],
     existingBookIds: [],
@@ -75,11 +78,11 @@ function AddReadingGoalBooksContent({
     if (submittingRef.current) return;
     const validation = validateReadingGoalBooksForm({ selectedBookIds });
     if (!validation.valid || !validation.input) {
-      setError(validation.message);
+      setError(validation.message === 'A book can be selected only once.' ? t('goals.form.validation.duplicateBook') : validation.message);
       return;
     }
     if (validation.input.bookIds.length === 0) {
-      setError('Select at least one book.');
+      setError(t('goals.addBooks.selectAtLeastOne'));
       return;
     }
 
@@ -94,18 +97,18 @@ function AddReadingGoalBooksContent({
         Promise.resolve<unknown>(null),
       )
       .then(() => router.replace(readingGoalRoute(readingGoalId)))
-      .catch((nextError: unknown) => setError(nextError instanceof Error ? nextError.message : 'Unable to add books.'))
+      .catch(() => setError(t('goals.addBooks.addError')))
       .finally(() => {
         submittingRef.current = false;
         setSubmitting(false);
       });
-  }, [api, readingGoalId, selectedBookIds]);
+  }, [api, readingGoalId, selectedBookIds, t]);
 
-  if (status === 'loading') return <Screen loading loadingMessage="Loading books" />;
+  if (status === 'loading') return <Screen loading loadingMessage={t('goals.addBooks.loading')} />;
   if (status === 'error') {
     return (
-      <Screen header={<AppHeader title="Add books" leftAction={<Button title="Back" variant="ghost" onPress={() => router.back()} />} />}>
-        <ErrorState title="Unable to load books." description="Please try again." actionLabel="Try again" onAction={load} />
+      <Screen header={<AppHeader title={t('goals.addBooks.title')} leftAction={<Button title={t('common.actions.back')} variant="ghost" onPress={() => router.back()} />} />}>
+        <ErrorState title={t('goals.addBooks.loadErrorTitle')} description={t('goals.addBooks.loadErrorDescription')} actionLabel={t('common.actions.retry')} onAction={load} />
       </Screen>
     );
   }
@@ -114,14 +117,14 @@ function AddReadingGoalBooksContent({
     <Screen
       header={
         <AppHeader
-          title="Add books"
-          subtitle="Choose local library books for this goal."
-          leftAction={<Button title="Back" variant="ghost" onPress={() => router.back()} />}
+          title={t('goals.addBooks.title')}
+          subtitle={t('goals.addBooks.subtitle')}
+          leftAction={<Button title={t('common.actions.back')} variant="ghost" onPress={() => router.back()} />}
         />
       }>
       <LibrarySearchInput value={query} onChangeText={setQuery} onClear={() => setQuery('')} />
       <View style={{ gap: theme.spacing.md }}>
-        <SectionHeader title="Books" description={`${selectedBookIds.length} selected`} />
+        <SectionHeader title={t('goals.addBooks.books')} description={t('goals.addBooks.selectedCount', { count: selectedBookIds.length })} />
         {filteredBooks.length > 0 ? (
           filteredBooks.map((book) => {
             const selected = selectedBookIds.includes(book.id);
@@ -129,7 +132,7 @@ function AddReadingGoalBooksContent({
               <Card
                 key={book.id}
                 variant="interactive"
-                accessibilityLabel={`${selected ? 'Remove' : 'Select'} ${book.title}`}
+                accessibilityLabel={selected ? t('goals.addBooks.removeBookSelection', { title: book.title }) : t('goals.addBooks.selectBook', { title: book.title })}
                 onPress={() => setSelectedBookIds((current) =>
                   current.includes(book.id)
                     ? current.filter((id) => id !== book.id)
@@ -142,7 +145,7 @@ function AddReadingGoalBooksContent({
                     <AppText color="textSecondary">{book.authors}</AppText>
                     <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: theme.spacing.xs }}>
                       <Badge label={book.statusLabel} />
-                      {selected ? <Badge label="Selected" variant="active" /> : null}
+                      {selected ? <Badge label={t('goals.addBooks.selected')} variant="active" /> : null}
                     </View>
                   </View>
                 </View>
@@ -151,12 +154,12 @@ function AddReadingGoalBooksContent({
           })
         ) : (
           <Card variant="outlined">
-            <EmptyState icon="search-outline" title="No books available" description="All matching books are already in this goal." />
+            <EmptyState icon="search-outline" title={t('goals.addBooks.emptyTitle')} description={t('goals.addBooks.emptyDescription')} />
           </Card>
         )}
       </View>
       {error ? <AppText color="error">{error}</AppText> : null}
-      <Button title="Add books" loading={submitting} onPress={submit} fullWidth />
+      <Button title={t('goals.addBooks.submit')} loading={submitting} onPress={submit} fullWidth />
     </Screen>
   );
 }

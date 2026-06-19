@@ -1,5 +1,6 @@
 import { router } from 'expo-router';
 import { View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 
 import { ErrorState } from '@/src/components/feedback';
 import { Screen, SectionHeader } from '@/src/components/layout';
@@ -15,9 +16,10 @@ import { ReadingHistorySummary } from './reading-history-summary';
 
 export function LibraryBookDetailsScreen({ libraryBookId }: { libraryBookId: string }) {
   const { api } = useApplication();
+  const { t } = useTranslation();
 
   if (!api) {
-    return <Screen loading loadingMessage="Loading book details" />;
+    return <Screen loading loadingMessage={t('library.details.loading')} />;
   }
 
   return <LibraryBookDetailsContent api={api} libraryBookId={libraryBookId} />;
@@ -31,19 +33,20 @@ function LibraryBookDetailsContent({
   libraryBookId: string;
 }) {
   const { theme } = useAppTheme();
+  const { t } = useTranslation();
   const state = useLibraryBookDetails(api, libraryBookId);
 
   if (state.status === 'loading' || state.status === 'idle') {
-    return <Screen loading loadingMessage="Loading book details" />;
+    return <Screen loading loadingMessage={t('library.details.loading')} />;
   }
 
   if (state.status === 'error' || !state.details) {
     return (
       <Screen>
         <ErrorState
-          title="Unable to load this book."
-          description="Please try again."
-          actionLabel="Try again"
+          title={t('library.details.loadErrorTitle')}
+          description={t('library.details.loadErrorDescription')}
+          actionLabel={t('common.actions.retry')}
           onAction={state.retry}
         />
       </Screen>
@@ -57,18 +60,18 @@ function LibraryBookDetailsContent({
       <LibraryBookHeader details={details} onBack={() => router.back()} />
       {details.description ? (
         <Card variant="outlined">
-          <AppText variant="heading3">Description</AppText>
+          <AppText variant="heading3">{t('library.details.description')}</AppText>
           <AppText color="textSecondary">{details.description}</AppText>
         </Card>
       ) : null}
       {details.notes || details.rating != null ? (
         <Card variant="outlined">
-          {details.rating != null ? <AppText>Rating {details.rating}/5</AppText> : null}
+          {details.rating != null ? <AppText>{t('library.details.rating', { rating: details.rating })}</AppText> : null}
           {details.notes ? <AppText color="textSecondary">{details.notes}</AppText> : null}
         </Card>
       ) : null}
       <View style={{ gap: theme.spacing.md }}>
-        <SectionHeader title="Editions" />
+        <SectionHeader title={t('library.details.editions')} />
         {details.editions.map((edition) => (
           <Card key={edition.id} variant="outlined">
             <View style={{ flexDirection: 'row', gap: theme.spacing.md }}>
@@ -77,13 +80,13 @@ function LibraryBookDetailsContent({
                 <AppText variant="heading3">{edition.title}</AppText>
                 {edition.publisher ? <AppText color="textSecondary">{edition.publisher}</AppText> : null}
                 {edition.publishedDate ? <AppText color="textSecondary">{edition.publishedDate}</AppText> : null}
-                {edition.language ? <AppText color="textSecondary">Language {edition.language}</AppText> : null}
+                {edition.language ? <AppText color="textSecondary">{t('library.details.language', { language: edition.language })}</AppText> : null}
                 {formatPageCount(edition.pageCount) ? (
                   <AppText color="textSecondary">{formatPageCount(edition.pageCount)}</AppText>
                 ) : null}
                 {edition.isbn10 ? <AppText color="textSecondary">ISBN-10 {edition.isbn10}</AppText> : null}
                 {edition.isbn13 ? <AppText color="textSecondary">ISBN-13 {edition.isbn13}</AppText> : null}
-                {edition.hasCopy ? <Badge label="Has copy" variant="active" /> : null}
+                {edition.hasCopy ? <Badge label={t('library.details.hasCopy')} variant="active" /> : null}
               </View>
             </View>
           </Card>
@@ -100,12 +103,12 @@ function LibraryBookDetailsContent({
       />
       <ReadingHistorySummary details={details} />
       <Card variant="outlined">
-        <SectionHeader title="Lists and goals" />
+        <SectionHeader title={t('library.details.listsAndGoals')} />
         <AppText color="textSecondary">
-          Lists: {details.lists.length > 0 ? details.lists.join(', ') : 'None'}
+          {t('library.details.lists', { value: details.lists.length > 0 ? details.lists.join(', ') : t('library.details.none') })}
         </AppText>
         <AppText color="textSecondary">
-          Goals: {details.goals.length > 0 ? details.goals.join(', ') : 'None'}
+          {t('library.details.goals', { value: details.goals.length > 0 ? details.goals.join(', ') : t('library.details.none') })}
         </AppText>
       </Card>
     </Screen>

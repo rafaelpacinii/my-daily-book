@@ -15,6 +15,9 @@ describe('home formatters', () => {
     assert.equal(getGreetingForHour(8), 'Good morning');
     assert.equal(getGreetingForHour(14), 'Good afternoon');
     assert.equal(getGreetingForHour(20), 'Good evening');
+    assert.equal(getGreetingForHour(8, 'pt-BR'), 'Bom dia');
+    assert.equal(getGreetingForHour(14, 'pt-BR'), 'Boa tarde');
+    assert.equal(getGreetingForHour(20, 'pt-BR'), 'Boa noite');
   });
 
   it('formats durations without external libraries', () => {
@@ -34,6 +37,7 @@ describe('home formatters', () => {
 
   it('formats civil dates without UTC date parsing', () => {
     assert.equal(formatCivilDate('2026-06-14'), 'June 14, 2026');
+    assert.equal(formatCivilDate('2026-06-14', 'pt-BR'), '14 de junho de 2026');
     assert.equal(formatCivilDate('2026-02-31'), '2026-02-31');
   });
 

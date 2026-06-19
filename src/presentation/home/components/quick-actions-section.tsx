@@ -1,6 +1,7 @@
 import { StyleSheet, View } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 
 import { SectionHeader } from '@/src/components/layout';
 import { Button } from '@/src/components/ui';
@@ -10,36 +11,37 @@ import { appRoutes } from '@/src/presentation/navigation/routes';
 
 export function QuickActionsSection() {
   const { theme } = useAppTheme();
+  const { t } = useTranslation();
 
   return (
     <View style={{ gap: theme.spacing.md }}>
-      <SectionHeader title="Quick actions" />
+      <SectionHeader title={t('home.quickActions.title')} />
       <View style={[styles.grid, { gap: theme.spacing.md }]}>
         <Button
-          title="Add book"
+          title={t('home.quickActions.addBook')}
           variant="secondary"
           disabled
-          accessibilityLabel="Add book unavailable"
+          accessibilityLabel={t('home.quickActions.addBookUnavailable')}
           icon={<Ionicons name={domainIcons.add} size={18} color={theme.colors.textPrimary} />}
         />
         <Button
-          title="Record reading"
+          title={t('home.quickActions.recordReading')}
           variant="outline"
-          accessibilityLabel="Record reading"
+          accessibilityLabel={t('home.quickActions.recordReading')}
           onPress={() => router.push(appRoutes.reading)}
           icon={<Ionicons name={domainIcons.reading} size={18} color={theme.colors.primary} />}
         />
         <Button
-          title="View library"
+          title={t('home.quickActions.viewLibrary')}
           variant="outline"
-          accessibilityLabel="View library"
+          accessibilityLabel={t('home.quickActions.viewLibrary')}
           onPress={() => router.push(appRoutes.library)}
           icon={<Ionicons name={domainIcons.library} size={18} color={theme.colors.primary} />}
         />
         <Button
-          title="Statistics"
+          title={t('home.quickActions.statistics')}
           variant="ghost"
-          accessibilityLabel="Open statistics"
+          accessibilityLabel={t('home.quickActions.openStatistics')}
           onPress={() => router.push(appRoutes.statistics)}
           icon={<Ionicons name={domainIcons.statistics} size={18} color={theme.colors.primary} />}
         />

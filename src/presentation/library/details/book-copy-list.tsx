@@ -1,4 +1,5 @@
 import { StyleSheet, TextInput, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 
 import { SectionHeader } from '@/src/components/layout';
 import { AppText, Button, Card, Divider } from '@/src/components/ui';
@@ -31,13 +32,14 @@ export function BookCopyList({
   onRemove,
 }: BookCopyListProps) {
   const { theme } = useAppTheme();
+  const { t } = useTranslation();
 
   return (
     <View style={{ gap: theme.spacing.md }}>
-      <SectionHeader title="Copies" description={`${details.copies.length} saved`} />
+      <SectionHeader title={t('library.details.copies')} description={t('library.details.copiesSaved', { count: details.copies.length })} />
       {details.copies.length === 0 ? (
         <Card variant="outlined">
-          <AppText color="textSecondary">No physical or digital copy saved.</AppText>
+          <AppText color="textSecondary">{t('library.details.noCopiesSaved')}</AppText>
         </Card>
       ) : (
         details.copies.map((copy) => (
@@ -45,7 +47,7 @@ export function BookCopyList({
         ))
       )}
       <Card variant="outlined">
-        <AppText variant="heading3">Add copy</AppText>
+        <AppText variant="heading3">{t('library.details.addCopy')}</AppText>
         <View style={[styles.chips, { gap: theme.spacing.sm }]}>
           {details.editions.map((edition) => (
             <FilterChip
@@ -58,48 +60,50 @@ export function BookCopyList({
         </View>
         <View style={[styles.chips, { gap: theme.spacing.sm }]}>
           <FilterChip
-            label="Physical"
+            label={t('library.details.physical')}
             selected={form.format === 'physical'}
             onPress={() => onFormChange({ ...form, format: 'physical' })}
           />
           <FilterChip
-            label="Digital"
+            label={t('library.details.digital')}
             selected={form.format === 'digital'}
             onPress={() => onFormChange({ ...form, format: 'digital' })}
           />
         </View>
         <FormInput
-          label="Label optional"
+          label={t('library.details.labelOptional')}
           value={form.label}
           onChangeText={(label) => onFormChange({ ...form, label })}
         />
         <FormInput
-          label="Acquired date optional YYYY-MM-DD"
+          label={t('library.details.acquiredDateOptional')}
           value={form.acquiredAt}
           onChangeText={(acquiredAt) => onFormChange({ ...form, acquiredAt })}
         />
         <FormInput
-          label="Notes optional"
+          label={t('library.details.notesOptional')}
           value={form.notes}
           onChangeText={(notes) => onFormChange({ ...form, notes })}
         />
         {error ? <AppText color="error">{error}</AppText> : null}
-        <Button title="Add copy" loading={submitting} onPress={onSubmit} />
+        <Button title={t('library.details.addCopy')} loading={submitting} onPress={onSubmit} />
       </Card>
     </View>
   );
 }
 
 function CopyCard({ copy, onRemove }: { copy: LibraryCopyViewModel; onRemove: () => void }) {
+  const { t } = useTranslation();
+
   return (
     <Card variant="outlined">
       <AppText variant="heading3">{copy.formatLabel}</AppText>
       <AppText color="textSecondary">{copy.editionTitle}</AppText>
       {copy.label ? <AppText>{copy.label}</AppText> : null}
-      {copy.acquiredAt ? <AppText color="textSecondary">Acquired {copy.acquiredAt}</AppText> : null}
+      {copy.acquiredAt ? <AppText color="textSecondary">{t('library.details.acquired', { date: copy.acquiredAt })}</AppText> : null}
       {copy.notes ? <AppText color="textSecondary">{copy.notes}</AppText> : null}
       <Divider />
-      <Button title="Remove copy" variant="danger" onPress={onRemove} />
+      <Button title={t('library.details.removeCopy')} variant="danger" onPress={onRemove} />
     </Card>
   );
 }

@@ -1,5 +1,6 @@
 import { View } from 'react-native';
 import { router } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 
 import { EmptyState } from '@/src/components/feedback';
 import { SectionHeader } from '@/src/components/layout';
@@ -14,19 +15,21 @@ export interface CurrentlyReadingSectionProps {
 }
 
 export function CurrentlyReadingSection({ books }: CurrentlyReadingSectionProps) {
+  const { t } = useTranslation();
+
   return (
     <View>
       <SectionHeader
-        title="Currently reading"
-        action={<Button title="Browse library" variant="ghost" onPress={() => router.push(appRoutes.library)} />}
+        title={t('home.currentlyReading.title')}
+        action={<Button title={t('home.currentlyReading.browseLibrary')} variant="ghost" onPress={() => router.push(appRoutes.library)} />}
       />
       {books.length === 0 ? (
         <Card variant="outlined">
           <EmptyState
             icon="book-outline"
-            title="No book currently being read"
-            description="Books with active reading cycles will appear here."
-            actionLabel="Browse library"
+            title={t('home.currentlyReading.emptyTitle')}
+            description={t('home.currentlyReading.emptyDescription')}
+            actionLabel={t('home.currentlyReading.browseLibrary')}
             onAction={() => router.push(appRoutes.library)}
           />
         </Card>

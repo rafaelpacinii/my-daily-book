@@ -1,36 +1,19 @@
-const monthNames = [
-  'January',
-  'February',
-  'March',
-  'April',
-  'May',
-  'June',
-  'July',
-  'August',
-  'September',
-  'October',
-  'November',
-  'December',
-];
+import type { SupportedLocale } from '@/src/localization';
 
-const weekdayNames = [
-  'Sunday',
-  'Monday',
-  'Tuesday',
-  'Wednesday',
-  'Thursday',
-  'Friday',
-  'Saturday',
-];
+export function getGreetingForHour(hour: number, locale: SupportedLocale = 'en'): string {
+  if (locale === 'pt-BR') {
+    if (hour < 12) return 'Bom dia';
+    if (hour < 18) return 'Boa tarde';
+    return 'Boa noite';
+  }
 
-export function getGreetingForHour(hour: number): string {
   if (hour < 12) return 'Good morning';
   if (hour < 18) return 'Good afternoon';
   return 'Good evening';
 }
 
-export function getLocalGreeting(date = new Date()): string {
-  return getGreetingForHour(date.getHours());
+export function getLocalGreeting(date = new Date(), locale: SupportedLocale = 'en'): string {
+  return getGreetingForHour(date.getHours(), locale);
 }
 
 export function toLocalCivilDate(date = new Date()): string {
@@ -41,30 +24,39 @@ export function toLocalCivilDate(date = new Date()): string {
   return `${year}-${month}-${day}`;
 }
 
-export function formatCivilDate(civilDate: string): string {
+export function formatCivilDate(civilDate: string, locale: SupportedLocale = 'en'): string {
   const parts = parseCivilDate(civilDate);
   if (!parts) return civilDate;
 
-  return `${monthNames[parts.month - 1]} ${parts.day}, ${parts.year}`;
+  return new Intl.DateTimeFormat(locale, {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+    timeZone: 'UTC',
+  }).format(new Date(Date.UTC(parts.year, parts.month - 1, parts.day)));
 }
 
-export function formatHomeDate(date = new Date()): string {
-  return `${weekdayNames[date.getDay()]}, ${monthNames[date.getMonth()]} ${date.getDate()}`;
+export function formatHomeDate(date = new Date(), locale: SupportedLocale = 'en'): string {
+  return new Intl.DateTimeFormat(locale, {
+    weekday: 'long',
+    month: 'long',
+    day: 'numeric',
+  }).format(date);
 }
 
-export function formatDuration(seconds: number): string {
+export function formatDuration(seconds: number, t?: (key: string, options?: Record<string, unknown>) => string): string {
   const safeSeconds = Number.isFinite(seconds) ? Math.max(0, seconds) : 0;
 
-  if (safeSeconds === 0) return '0 min';
-  if (safeSeconds < 60) return '< 1 min';
+  if (safeSeconds === 0) return t ? t('home.units.zeroMinutes') : '0 min';
+  if (safeSeconds < 60) return t ? t('home.units.lessThanMinute') : '< 1 min';
 
   const totalMinutes = Math.floor(safeSeconds / 60);
   const hours = Math.floor(totalMinutes / 60);
   const minutes = totalMinutes % 60;
 
-  if (hours === 0) return `${minutes} min`;
-  if (minutes === 0) return `${hours}h`;
-  return `${hours}h ${minutes}min`;
+  if (hours === 0) return t ? t('home.units.minuteShort', { count: minutes }) : `${minutes} min`;
+  if (minutes === 0) return t ? t('home.units.hourShort', { count: hours }) : `${hours}h`;
+  return t ? t('home.units.hourMinuteShort', { hours, minutes }) : `${hours}h ${minutes}min`;
 }
 
 export function pluralize(count: number, singular: string, plural = `${singular}s`): string {

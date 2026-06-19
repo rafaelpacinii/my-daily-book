@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { View } from 'react-native';
 import { router } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 
 import type { ApplicationApi } from '@/src/application';
 import { EmptyState, ErrorState } from '@/src/components/feedback';
@@ -23,7 +24,8 @@ import {
 
 export function ReadingGoalFormScreen({ readingGoalId }: { readingGoalId?: string }) {
   const { api } = useApplication();
-  if (!api) return <Screen loading loadingMessage="Loading goal form" />;
+  const { t } = useTranslation();
+  if (!api) return <Screen loading loadingMessage={t('goals.form.loading')} />;
   return <ReadingGoalFormContent api={api} readingGoalId={readingGoalId} />;
 }
 
@@ -35,6 +37,7 @@ function ReadingGoalFormContent({
   readingGoalId?: string;
 }) {
   const { theme } = useAppTheme();
+  const { t } = useTranslation();
   const isEditing = Boolean(readingGoalId);
   const [form, setForm] = useState<ReadingGoalFormState>({
     name: '',
@@ -101,19 +104,19 @@ function ReadingGoalFormContent({
     if (submittingRef.current) return;
     const formValidation = validateReadingGoalForm(form);
     if (!formValidation.valid || !formValidation.input) {
-      setError(formValidation.message);
+      setError(mapGoalFormMessage(formValidation.message, t));
       return;
     }
 
     const booksValidation = validateReadingGoalBooksForm({ selectedBookIds });
     if (!booksValidation.valid || !booksValidation.input) {
-      setError(booksValidation.message);
+      setError(mapGoalFormMessage(booksValidation.message, t));
       return;
     }
 
     submittingRef.current = true;
     setSubmitting(true);
-    setError(booksValidation.input.recommendedMessage);
+    setError(booksValidation.input.recommendedMessage ? t('goals.form.recommendedMessage') : null);
 
     const action = isEditing && readingGoalId
       ? api.goals.updateGoal({ id: readingGoalId, ...formValidation.input })
@@ -127,18 +130,18 @@ function ReadingGoalFormContent({
 
     Promise.resolve(action)
       .then((result) => router.replace(readingGoalRoute(result.readingGoal.id)))
-      .catch((nextError: unknown) => setError(nextError instanceof Error ? nextError.message : 'Unable to save goal.'))
+      .catch(() => setError(t('goals.form.saveError')))
       .finally(() => {
         submittingRef.current = false;
         setSubmitting(false);
       });
-  }, [api, form, isEditing, readingGoalId, selectedBookIds]);
+  }, [api, form, isEditing, readingGoalId, selectedBookIds, t]);
 
-  if (status === 'loading') return <Screen loading loadingMessage="Loading goal form" />;
+  if (status === 'loading') return <Screen loading loadingMessage={t('goals.form.loading')} />;
   if (status === 'error') {
     return (
-      <Screen header={<AppHeader title="Reading goal" leftAction={<Button title="Back" variant="ghost" onPress={() => router.back()} />} />}>
-        <ErrorState title="Unable to load this goal." description="Please go back and try again." actionLabel="Back" onAction={() => router.back()} />
+      <Screen header={<AppHeader title={t('goals.form.title')} leftAction={<Button title={t('common.actions.back')} variant="ghost" onPress={() => router.back()} />} />}>
+        <ErrorState title={t('goals.form.loadErrorTitle')} description={t('goals.form.loadErrorDescription')} actionLabel={t('common.actions.back')} onAction={() => router.back()} />
       </Screen>
     );
   }
@@ -148,29 +151,29 @@ function ReadingGoalFormContent({
       keyboardAvoiding
       header={
         <AppHeader
-          title={isEditing ? 'Edit goal' : 'Create goal'}
-          leftAction={<Button title="Back" variant="ghost" onPress={() => router.back()} />}
+          title={isEditing ? t('goals.form.editTitle') : t('goals.form.createTitle')}
+          leftAction={<Button title={t('common.actions.back')} variant="ghost" onPress={() => router.back()} />}
         />
       }>
       <View style={{ gap: theme.spacing.md }}>
-        <ReadingFormField label="Name" value={form.name} onChangeText={(name) => setForm((current) => ({ ...current, name }))} />
-        <ReadingFormField label="Description" value={form.description} onChangeText={(description) => setForm((current) => ({ ...current, description }))} multiline />
+        <ReadingFormField label={t('goals.form.name')} value={form.name} onChangeText={(name) => setForm((current) => ({ ...current, name }))} />
+        <ReadingFormField label={t('goals.form.description')} value={form.description} onChangeText={(description) => setForm((current) => ({ ...current, description }))} multiline />
         <View style={{ flexDirection: 'row', gap: theme.spacing.md }}>
           <View style={{ flex: 1 }}>
-            <ReadingFormField label="Start date" value={form.startDate} onChangeText={(startDate) => setForm((current) => ({ ...current, startDate }))} placeholder="YYYY-MM-DD" />
+            <ReadingFormField label={t('goals.form.startDate')} value={form.startDate} onChangeText={(startDate) => setForm((current) => ({ ...current, startDate }))} placeholder={t('goals.form.datePlaceholder')} />
           </View>
           <View style={{ flex: 1 }}>
-            <ReadingFormField label="Target date" value={form.targetDate} onChangeText={(targetDate) => setForm((current) => ({ ...current, targetDate }))} placeholder="YYYY-MM-DD" />
+            <ReadingFormField label={t('goals.form.targetDate')} value={form.targetDate} onChangeText={(targetDate) => setForm((current) => ({ ...current, targetDate }))} placeholder={t('goals.form.datePlaceholder')} />
           </View>
         </View>
       </View>
 
       {!isEditing ? (
         <View style={{ gap: theme.spacing.md }}>
-          <SectionHeader title="Books" description={`${selectedBookIds.length} selected`} />
-          {booksStatus === 'loading' ? <AppText color="textSecondary">Loading books...</AppText> : null}
+          <SectionHeader title={t('goals.form.books')} description={t('goals.form.selectedCount', { count: selectedBookIds.length })} />
+          {booksStatus === 'loading' ? <AppText color="textSecondary">{t('goals.form.loadingBooks')}</AppText> : null}
           {booksStatus === 'error' ? (
-            <ErrorState title="Unable to load books." description="Please try again from your library." />
+            <ErrorState title={t('goals.form.loadBooksErrorTitle')} description={t('goals.form.loadBooksErrorDescription')} />
           ) : null}
           {booksStatus === 'success' ? (
             <>
@@ -182,7 +185,7 @@ function ReadingGoalFormContent({
                     <Card
                       key={book.id}
                       variant="interactive"
-                      accessibilityLabel={`${selected ? 'Remove' : 'Select'} ${book.title}`}
+                      accessibilityLabel={selected ? t('goals.form.removeBookSelection', { title: book.title }) : t('goals.form.selectBook', { title: book.title })}
                       onPress={() => setSelectedBookIds((current) =>
                         current.includes(book.id)
                           ? current.filter((id) => id !== book.id)
@@ -195,7 +198,7 @@ function ReadingGoalFormContent({
                           <AppText color="textSecondary">{book.authors}</AppText>
                           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: theme.spacing.xs }}>
                             <Badge label={book.statusLabel} />
-                            {selected ? <Badge label="Selected" variant="active" /> : null}
+                            {selected ? <Badge label={t('goals.form.selected')} variant="active" /> : null}
                           </View>
                         </View>
                       </View>
@@ -204,7 +207,7 @@ function ReadingGoalFormContent({
                 })
               ) : (
                 <Card variant="outlined">
-                  <EmptyState icon="search-outline" title="No books found" description="Try another search or add books to your library first." />
+                  <EmptyState icon="search-outline" title={t('goals.form.noBooksFound')} description={t('goals.form.noBooksFoundDescription')} />
                 </Card>
               )}
             </>
@@ -212,8 +215,29 @@ function ReadingGoalFormContent({
         </View>
       ) : null}
 
-      {error ? <AppText color={error.startsWith('A goal works best') ? 'textSecondary' : 'error'}>{error}</AppText> : null}
-      <Button title={isEditing ? 'Save goal' : 'Create goal'} loading={submitting} onPress={submit} fullWidth />
+      {error ? <AppText color={error === t('goals.form.recommendedMessage') ? 'textSecondary' : 'error'}>{error}</AppText> : null}
+      <Button title={isEditing ? t('goals.form.saveAction') : t('goals.form.createAction')} loading={submitting} onPress={submit} fullWidth />
     </Screen>
   );
+}
+
+function mapGoalFormMessage(message: string | null, t: (key: string) => string) {
+  switch (message) {
+    case 'Name is required.':
+      return t('goals.form.validation.nameRequired');
+    case 'Start date is required.':
+      return t('goals.form.validation.startDateRequired');
+    case 'Target date is required.':
+      return t('goals.form.validation.targetDateRequired');
+    case 'Use a valid start date in YYYY-MM-DD format.':
+      return t('goals.form.validation.startDateInvalid');
+    case 'Use a valid target date in YYYY-MM-DD format.':
+      return t('goals.form.validation.targetDateInvalid');
+    case 'Target date cannot be before start date.':
+      return t('goals.form.validation.targetBeforeStart');
+    case 'A book can be selected only once.':
+      return t('goals.form.validation.duplicateBook');
+    default:
+      return message ?? t('errors.generic');
+  }
 }
